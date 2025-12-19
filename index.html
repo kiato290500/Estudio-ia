@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symphony Pro | AI Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --gold: #ffd700; --blue: #00f2ff; --purple: #bc13fe; 
+            --dark: #050507; --card-bg: rgba(20, 20, 25, 0.95);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: radial-gradient(circle at top, #1a1a2e 0%, var(--dark) 100%); 
+            color: white; margin: 0; padding: 10px; min-height: 100vh;
+            display: flex; justify-content: center;
+        }
+
+        .container { width: 100%; max-width: 1150px; display: grid; grid-template-columns: 1fr 350px; gap: 20px; margin-top: 20px; }
+        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+
+        .card { 
+            background: var(--card-bg); backdrop-filter: blur(20px);
+            border: 1px solid var(--border); border-radius: 30px; padding: 35px; 
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8); position: relative; overflow: hidden;
+        }
+
+        h1 { font-family: 'Orbitron', sans-serif; font-size: 2.2em; margin-bottom: 5px; background: linear-gradient(to right, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        #vip-tag { display: none; background: linear-gradient(90deg, #000, var(--gold), #000); color: black; padding: 10px; border-radius: 12px; font-weight: 800; text-align: center; margin-bottom: 20px; border: 1px solid var(--gold); font-size: 0.8em; }
+
+        .login-section { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 20px; border: 1px dashed #444; margin-bottom: 25px; }
+
+        textarea, input, select { 
+            width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333; 
+            background: rgba(0,0,0,0.6); color: white; margin-bottom: 15px; font-size: 1em; box-sizing: border-box;
+        }
+
+        .genre-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin: 10px 0 20px 0; }
+        .genre-chip { padding: 10px; border-radius: 10px; background: #111; border: 1px solid #333; font-size: 0.75em; cursor: pointer; text-align: center; transition: 0.3s; font-weight: 600; text-transform: uppercase; }
+        .genre-chip.active { background: var(--blue); color: black; border-color: var(--blue); box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); }
+
+        .btn-gen { width: 100%; padding: 22px; border-radius: 18px; border: none; background: linear-gradient(45deg, var(--purple), var(--blue)); color: white; font-weight: 900; font-size: 1.3em; cursor: pointer; transition: 0.4s; }
+        .btn-gen:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(188, 19, 254, 0.4); }
+
+        .player-zone { background: #000; padding: 25px; border-radius: 25px; margin-top: 30px; border: 1px solid var(--blue); }
+        canvas { width: 100%; height: 90px; }
+
+        .btn-download { background: var(--gold); color: black; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 0.8em; }
+
+        .sidebar { background: var(--card-bg); border-radius: 30px; padding: 25px; border: 1px solid var(--border); height: fit-content; }
+        .history-item { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 15px; margin-bottom: 12px; border-left: 4px solid var(--purple); font-size: 0.85em; }
+
+        .progress-bar { width: 0%; height: 4px; background: var(--blue); position: absolute; top: 0; left: 0; transition: width 0.4s; z-index: 100; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div id="progress" class="progress-bar"></div>
+        <div id="vip-tag">👑 MODO ADMINISTRADOR: SISTEMA DESBLOQUEADO</div>
+
+        <div id="login-area" class="login-section">
+            <h4 style="margin:0 0 10px 0; font-family:'Orbitron'; font-size: 0.8em; color: var(--gold);">CONECTAR STUDIO</h4>
+            <div style="display:flex; gap:10px;">
+                <input type="email" id="email-input" placeholder="tu@correo.com" style="margin-bottom:0">
+                <button onclick="auth()" style="padding:0 20px; border-radius:12px; cursor:pointer; background:white; font-weight:bold; border:none;">LOGIN</button>
+            </div>
+        </div>
+
+        <h1>Symphony IA</h1>
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; font-size:0.8em; opacity:0.8;">
+            <span>Créditos: <b id="t-count" style="color:var(--blue)">100</b></span>
+            <span id="user-type">Free Access</span>
+        </div>
+
+        <textarea id="lyrics" rows="3" placeholder="Describe la letra o el sentimiento de la canción..."></textarea>
+        <input type="text" id="artist" placeholder="Inspiración de Artista (Ej: Bad Bunny, Hans Zimmer)">
+
+        <label style="color:var(--blue); font-size:0.7em; font-weight:800; letter-spacing:1px;">GÉNERO PRINCIPAL</label>
+        <select id="main-genre">
+            <option value="pop">Pop</option>
+            <option value="reggaeton">Reggaetón</option>
+            <option value="trap">Trap</option>
+            <option value="phonk">Phonk</option>
+            <option value="lofi">Lo-Fi</option>
+            <option value="corridos-tumbados">Corridos Tumbados</option>
+            <option value="techno">Techno</option>
+            <option value="rock">Rock</option>
+        </select>
+
+        <label style="color:var(--purple); font-size:0.7em; font-weight:800; letter-spacing:1px;">FUSIÓN EXTRA</label>
+        <div class="genre-grid">
+            <div class="genre-chip" onclick="toggleGenre(this)" data-val="dark">Dark</div>
+            <div class="genre-chip" onclick="toggleGenre(this)" data-val="orchestral">Orquestal</div>
+            <div class="genre-chip" onclick="toggleGenre(this)" data-val="8bit">8-Bit</div>
+            <div class="genre-chip" onclick="toggleGenre(this)" data-val="heavy-bass">Sub Bass</div>
+        </div>
+
+        <button class="btn-gen" onclick="generate()">FORJAR MASTER FINAL</button>
+        
+        <div id="loader" style="display:none; text-align:center; margin-top:25px;">
+            <p id="status-text" style="color:var(--blue); font-size:0.8em; font-family:'Orbitron';">🧬 Sincronizando Redes...</p>
+        </div>
+
+        <div id="player-zone" class="player-zone" style="display:none;">
+            <canvas id="vis"></canvas>
+            <audio id="audio" controls style="width:100%; filter: invert(1); margin-bottom: 15px;"></audio>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h4 id="now-playing" style="color:white; margin:0; font-family:'Orbitron'; font-size:0.8em;"></h4>
+                <a id="download-link" class="btn-download" download="Symphony_AI.mp3">Descargar MP3</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <h3 style="margin-top:0; font-family:'Orbitron'; font-size:0.8em; color:var(--purple);">SESIÓN</h3>
+        <div id="history"></div>
+    </div>
+</div>
+
+<script>
+    // TU NUEVO TOKEN PERSONALIZADO
+    const TOKEN = "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"; 
+    
+    let tokens = 100;
+    let isVip = false;
+    let selectedFusions = [];
+    let aCtx, analyser, source;
+
+    function toggleGenre(el) {
+        const val = el.getAttribute('data-val');
+        el.classList.toggle('active');
+        if(el.classList.contains('active')) selectedFusions.push(val);
+        else selectedFusions = selectedFusions.filter(g => g !== val);
+    }
+
+    function auth() {
+        const mail = document.getElementById('email-input').value.toLowerCase().trim();
+        const vips = ["kiatocamarena@gmail.com", "braytoncamarena7@gmail.com"];
+        if(vips.includes(mail)) {
+            isVip = true; tokens = Infinity;
+            document.getElementById('vip-tag').style.display = "block";
+            document.getElementById('t-count').innerText = "∞";
+            document.getElementById('user-type').innerText = "ADMIN ACCESS";
+            document.getElementById('login-area').style.display = "none";
+        } else {
+            document.getElementById('login-area').style.display = "none";
+        }
+    }
+
+    async function generate() {
+        if(!isVip && tokens <= 0) return alert("Sin créditos.");
+        
+        const main = document.getElementById('main-genre').value;
+        const lyr = document.getElementById('lyrics').value;
+        const art = document.getElementById('artist').value;
+        const status = document.getElementById('status-text');
+        const loader = document.getElementById('loader');
+        const progress = document.getElementById('progress');
+
+        loader.style.display = "block";
+        progress.style.width = "30%";
+        status.innerText = "🧬 Despertando Servidor IA...";
+
+        try {
+            const prompt = `High quality master, ${main} style with ${selectedFusions.join(' ')}, inspired by ${art}, mood: ${lyr}`;
+            
+            const response = await fetch("https://api-inference.huggingface.co/models/facebook/musicgen-small", {
+                headers: { Authorization: `Bearer ${TOKEN}` },
+                method: "POST",
+                body: JSON.stringify({ inputs: prompt }),
+            });
+
+            // Manejo de carga de modelo (Error 503)
+            if (response.status === 503) {
+                status.innerText = "⏳ Cargando modelo (20s)...";
+                setTimeout(generate, 5000); // Reintento automático
+                return;
+            }
+
+            if(!response.ok) throw new Error("Error en la conexión. Reintenta.");
+
+            progress.style.width = "90%";
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+
+            if(!isVip) tokens--;
+            document.getElementById('t-count').innerText = isVip ? "∞" : tokens;
+
+            const audio = document.getElementById('audio');
+            audio.src = url;
+            document.getElementById('download-link').href = url;
+            document.getElementById('now-playing').innerText = art || 'AI Original';
+            document.getElementById('player-zone').style.display = "block";
+            
+            document.getElementById('history').innerHTML = `<div class="history-item"><b>${art || 'AI Track'}</b><br><small>${main}</small></div>` + document.getElementById('history').innerHTML;
+
+            progress.style.width = "100%";
+            setTimeout(() => progress.style.width = "0%", 1000);
+            
+            audio.onplay = () => { if(!aCtx) startVisualizer(); };
+
+        } catch(e) {
+            alert(e.message);
+        } finally {
+            if(status.innerText !== "⏳ Cargando modelo (20s)...") loader.style.display = "none";
+        }
+    }
+
+    function startVisualizer() {
+        const audio = document.getElementById('audio');
+        aCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = aCtx.createAnalyser();
+        source = aCtx.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(aCtx.destination);
+        analyser.fftSize = 256;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const canvas = document.getElementById('vis');
+        const ctx = canvas.getContext('2d');
+
+        function render() {
+            requestAnimationFrame(render);
+            analyser.getByteFrequencyData(dataArray);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            dataArray.forEach((v, i) => {
+                if(i % 3 === 0) {
+                    ctx.fillStyle = i % 2 === 0 ? '#00f2ff' : '#bc13fe';
+                    ctx.fillRect(i * 2, canvas.height - v/3, 4, v/3);
+                }
+            });
+        }
+        render();
+    }
+</script>
+</body>
+</html>
